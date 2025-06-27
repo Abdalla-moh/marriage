@@ -56,6 +56,19 @@ public:
     }
 };
 
+class ConditionalApproval : public MarriageAction {
+    MarriageAction* action;
+    int min_age;
+public:
+    ConditionalApproval(MarriageAction* act, int age) : action(act), min_age(age) {}
+    void perform(MarriageEvent &event) override {
+        if (event.getEventType() == "Adult" || min_age >= 18) {
+            action->perform(event);
+        }
+    }
+    ~ConditionalApproval() { delete action; }
+};
+
 class MarriageRegistry {
     std::vector<MarriageEvent*> events;
 public:
@@ -111,9 +124,31 @@ TEST(MarriageTest, MultipleEventsProcessing) {
     return true;
 }
 
+TEST(MarriageTest, ConditionalAdultApproval) {
+    MarriageRegistry registry;
+    std::vector<MarriageAction*> actions = { new ConditionalApproval(new ApproveMarriage(), 20) };
+    MarriageEvent* adultWedding = new MarriageEvent("David & Sophia", "Adult", false, actions);
+    registry.addEvent(adultWedding);
+    registry.processAll();
+    ASSERT_TRUE(adultWedding->isApproved());
+    return true;
+}
+
+TEST(MarriageTest, ConditionalMinorRejection) {
+    MarriageRegistry registry;
+    std::vector<MarriageAction*> actions = { new ConditionalApproval(new ApproveMarriage(), 16) };
+    MarriageEvent* minorWedding = new MarriageEvent("Kevin & Mia", "Minor", false, actions);
+    registry.addEvent(minorWedding);
+    registry.processAll();
+    ASSERT_TRUE(!minorWedding->isApproved());
+    return true;
+}
+
 int main() {
     RUN_TEST(MarriageTest, ApprovalWorkflow);
     RUN_TEST(MarriageTest, RejectionWorkflow);
     RUN_TEST(MarriageTest, MultipleEventsProcessing);
+    RUN_TEST(MarriageTest, ConditionalAdultApproval);
+    RUN_TEST(MarriageTest, ConditionalMinorRejection);
     return 0;
 }
