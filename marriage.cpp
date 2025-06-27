@@ -49,6 +49,13 @@ public:
     }
 };
 
+class RejectMarriage : public MarriageAction {
+public:
+    void perform(MarriageEvent &event) override {
+        event.setApproved(false);
+    }
+};
+
 class MarriageRegistry {
     std::vector<MarriageEvent*> events;
 public:
@@ -77,7 +84,36 @@ TEST(MarriageTest, ApprovalWorkflow) {
     return true;
 }
 
+TEST(MarriageTest, RejectionWorkflow) {
+    MarriageRegistry registry;
+    std::vector<MarriageAction*> actions = { new RejectMarriage() };
+    MarriageEvent* wedding = new MarriageEvent("Mike & Sarah", "Wedding", true, actions);
+    registry.addEvent(wedding);
+    registry.processAll();
+    ASSERT_TRUE(!wedding->isApproved());
+    return true;
+}
+
+TEST(MarriageTest, MultipleEventsProcessing) {
+    MarriageRegistry registry;
+    std::vector<MarriageAction*> actions1 = { new ApproveMarriage() };
+    std::vector<MarriageAction*> actions2 = { new RejectMarriage() };
+
+    MarriageEvent* event1 = new MarriageEvent("Tom & Lisa", "Wedding", false, actions1);
+    MarriageEvent* event2 = new MarriageEvent("Alex & Emily", "Wedding", true, actions2);
+
+    registry.addEvent(event1);
+    registry.addEvent(event2);
+    registry.processAll();
+
+    ASSERT_TRUE(event1->isApproved());
+    ASSERT_TRUE(!event2->isApproved());
+    return true;
+}
+
 int main() {
     RUN_TEST(MarriageTest, ApprovalWorkflow);
+    RUN_TEST(MarriageTest, RejectionWorkflow);
+    RUN_TEST(MarriageTest, MultipleEventsProcessing);
     return 0;
 }
