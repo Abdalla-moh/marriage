@@ -19,7 +19,7 @@ class MarriageEvent {
 
 public:
     MarriageEvent(const std::string &name, const std::string &type, bool approved,
-                 const std::vector<MarriageAction*> &acts)
+                  const std::vector<MarriageAction*> &acts)
         : couple_name(name), event_type(type),
           is_approved(approved), actions(acts) {}
 
@@ -144,11 +144,22 @@ TEST(MarriageTest, ConditionalMinorRejection) {
     return true;
 }
 
+TEST(MarriageTest, ConditionalApprovalWithDifferentEventType) {
+    MarriageRegistry registry;
+    std::vector<MarriageAction*> actions = { new ConditionalApproval(new ApproveMarriage(), 17) };
+    MarriageEvent* teenWedding = new MarriageEvent("Sam & Lily", "Teen", false, actions);
+    registry.addEvent(teenWedding);
+    registry.processAll();
+    ASSERT_TRUE(!teenWedding->isApproved());
+    return true;
+}
+
 int main() {
     RUN_TEST(MarriageTest, ApprovalWorkflow);
     RUN_TEST(MarriageTest, RejectionWorkflow);
     RUN_TEST(MarriageTest, MultipleEventsProcessing);
     RUN_TEST(MarriageTest, ConditionalAdultApproval);
     RUN_TEST(MarriageTest, ConditionalMinorRejection);
+    RUN_TEST(MarriageTest, ConditionalApprovalWithDifferentEventType);
     return 0;
 }
